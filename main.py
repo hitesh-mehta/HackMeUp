@@ -4,7 +4,7 @@ from src.scrape_hack2skill import scrape_hack2skill
 from src.combine_data import combine_data
 from src.organize_data import organize_data
 from datetime import datetime
-
+import time
 def run_scraper():
     print("Starting hackathon scraper...")
 
