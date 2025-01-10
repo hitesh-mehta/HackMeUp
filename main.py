@@ -45,7 +45,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
 import time
-from typing import Dict
+from typing import Dict, Optional
 from pydantic import BaseModel
 
 # Import your scraping modules
@@ -57,14 +57,14 @@ from src.organize_data import organize_data
 
 app = FastAPI(title="Hackathon Scraper API")
 
-# Global variable to store the latest scraping result
-latest_data = None
-
 class ScrapingResponse(BaseModel):
     last_updated: str
     data: Dict
 
-def run_scraper():
+# Global variable to store the latest scraping result
+latest_data: Optional[ScrapingResponse] = None
+
+def run_scraper() -> ScrapingResponse:
     """Function to run the scraping process"""
     global latest_data
     
@@ -84,12 +84,16 @@ def run_scraper():
         combine_data()
         
         # Step 3: Organize and store the data
-        latest_data = {
-            "last_updated": datetime.now().isoformat(),
-            "data": organize_data()
-        }
+        organized_data = organize_data()
+        
+        # Create a valid ScrapingResponse
+        latest_data = ScrapingResponse(
+            last_updated=datetime.now().isoformat(),
+            data=organized_data
+        )
         
         print("Hackathon scraping completed successfully!")
+        return latest_data
         
     except Exception as e:
         print(f"Error during scraping: {str(e)}")
@@ -97,10 +101,11 @@ def run_scraper():
 
 # Initialize with existing data
 try:
-    latest_data = {
-        "last_updated": datetime.now().isoformat(),
-        "data": organize_data()
-    }
+    organized_data = organize_data()
+    latest_data = ScrapingResponse(
+        last_updated=datetime.now().isoformat(),
+        data=organized_data
+    )
 except Exception as e:
     print(f"Error loading initial data: {str(e)}")
     latest_data = None
@@ -129,20 +134,24 @@ async def get_hackathon_data():
     Get the latest hackathon data
     """
     if latest_data is None:
-        raise HTTPException(status_code=503, detail="Data not yet available")
+        raise HTTPException(
+            status_code=503, 
+            detail="Data not yet available. Please try again later or trigger a manual scrape."
+        )
     return latest_data
 
-@app.post("/trigger-scrape")
+@app.post("/trigger-scrape", response_model=ScrapingResponse)
 async def trigger_manual_scrape():
     """
     Manually trigger the scraping process
     """
     try:
-        run_scraper()
-        return {"message": "Scraping completed successfully"}
+        result = run_scraper()
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+        
