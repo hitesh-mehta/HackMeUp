@@ -3,10 +3,9 @@ from src.scrape_hackerearth import scrape_hackerearth
 from src.scrape_hack2skill import scrape_hack2skill
 from src.combine_data import combine_data
 from src.organize_data import organize_data
-import pywhatkit as kit
+from datetime import datetime
 
-
-if __name__ == "__main__":
+def run_scraper():
     print("Starting hackathon scraper...")
 
     # Step 1: Scrape data from individual platforms
@@ -25,6 +24,20 @@ if __name__ == "__main__":
     print("Hackathon scraping completed!")
 
     message = organize_data()
+
+if __name__ == "__main__":
+    while True:
+        # Get the current time
+        now = datetime.now()
+        
+        # Check if the current time is midnight
+        if now.hour == 0 and now.minute == 0:
+            run_scraper()
+            # Sleep for a minute to avoid running multiple times within the same minute
+            time.sleep(60)
+        else:
+            # Sleep for a short time before checking again
+            time.sleep(30)
 
 
     
