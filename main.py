@@ -94,6 +94,8 @@ def get_scraper_message():
             return jsonify({"message": "Scraping in progress or not yet started."}), 202
 
 def scheduled_scraper():
+    with message_lock:
+        scraper_message = organize_data()
     while True:
         # Get the current time
         now = datetime.now()
