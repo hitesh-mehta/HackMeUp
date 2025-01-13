@@ -65,8 +65,8 @@ async function connectToWhatsApp() {
                               message.message?.extendedTextMessage?.text || 
                               '';
 
-            if (messageText.toLowerCase().trim() === '@hackmeup') {
-                console.log('Received @hackmeup command');
+            if (messageText.toLowerCase().trim() === '@hackmeup'||messageText.toLowerCase().trim() === '@online'||messageText.toLowerCase().trim() === '@offline') {
+                console.log('Received command');
                 
                 try {
                     // Get data from your backend
@@ -86,8 +86,12 @@ async function connectToWhatsApp() {
                             i++;
                             continue;
                         }
+                        if((temp.toLowerCase().includes("online") && messageText.toLowerCase().trim() === '@offline')||(temp.toLowerCase().includes("offline") && messageText.toLowerCase().trim() === '@online'))
+                            continue;
                         if(temp.includes("UTC (UTC)")) {
-                            temp = temp.replace("UTC (UTC)", "UTC");
+                            temp = temp.replaceAll("UTC (UTC)", "UTC");
+                        }else if (temp.includes("UTC(UTC)")) {
+                            temp = temp.replaceAll("UTC(UTC)", "UTC");
                         }
                         temp = String(temp).replaceAll('*', '');
                         replyMessage += (i.toString() + "." + temp + "\n-----------\n");
