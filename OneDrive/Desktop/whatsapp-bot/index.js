@@ -66,8 +66,8 @@ async function connectToWhatsApp() {
                             i++;
                             continue;
                         }
-                        if(temp.includes("UTC(UTC)")){
-                            temp = temp.replace("UTC(UTC)", "UTC");
+                        if(temp.includes("UTC (UTC)")){
+                            temp = temp.replace("UTC (UTC)", "UTC");
                         }
                         temp = String(temp).replaceAll('*', '');
                         replyMessage+=(i.toString()+"."+temp+"\n-----------\n");
