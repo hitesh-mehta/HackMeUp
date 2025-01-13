@@ -3,9 +3,21 @@ const { Boom } = require('@hapi/boom');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
+const express = require('express');
+const app = express();
 
 // Your backend URL
 const BACKEND_URL = 'https://hackmeup.onrender.com';
+
+// Express server setup
+const port = process.env.PORT || 10000;
+app.get('/', (req, res) => {
+    res.send('WhatsApp Bot Server is running!');
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
 
 async function connectToWhatsApp() {
     // Auth state management
@@ -13,7 +25,11 @@ async function connectToWhatsApp() {
     
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true, // Print QR in terminal for scanning
+        printQRInTerminal: true,
+        browser: ['WhatsApp Bot', 'Chrome', '1.0.0'],
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
+        keepAliveIntervalMs: 10000
     });
 
     // Handle connection updates
@@ -22,10 +38,13 @@ async function connectToWhatsApp() {
 
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect?.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('Connection closed due to ', lastDisconnect?.error, ', reconnecting ', shouldReconnect);
+            console.log('Connection closed due to ', lastDisconnect?.error?.output || lastDisconnect?.error, ', reconnecting ', shouldReconnect);
             
             if (shouldReconnect) {
-                connectToWhatsApp();
+                // Add delay before reconnecting
+                setTimeout(() => {
+                    connectToWhatsApp();
+                }, 5000); // 5 second delay
             }
         } else if (connection === 'open') {
             console.log('Connected to WhatsApp!');
@@ -58,22 +77,25 @@ async function connectToWhatsApp() {
                     let replyMessage = '';
                     console.log(hackathonData['data'][0]);
                     const data = hackathonData['data'];
-                    let i=0;
-                    for(let temp of data){
-                        if(i==0){
-                            temp="Welcome to HackMeUp! Here are the upcoming hackathons:\n\n";+temp;
-                            replyMessage+=temp;
+                    let i = 0;
+                    
+                    for(let temp of data) {
+                        if(i === 0) {
+                            temp = "Welcome to HackMeUp! Here are the upcoming hackathons:\n\n";
+                            replyMessage += temp;
                             i++;
                             continue;
                         }
-                        if(temp.includes("UTC (UTC)")){
+                        if(temp.includes("UTC (UTC)")) {
                             temp = temp.replace("UTC (UTC)", "UTC");
                         }
                         temp = String(temp).replaceAll('*', '');
-                        replyMessage+=(i.toString()+"."+temp+"\n-----------\n");
+                        replyMessage += (i.toString() + "." + temp + "\n-----------\n");
                         i++;
                     }
+                    
                     console.log(replyMessage);
+                    
                     // Send the reply
                     await sock.sendMessage(
                         message.key.remoteJid,
@@ -95,6 +117,11 @@ async function connectToWhatsApp() {
             console.error('Error processing message:', error);
         }
     });
+
+    // Add periodic health check
+    setInterval(() => {
+        console.log('Bot health check: Running');
+    }, 30000); // Every 30 seconds
 }
 
 // Create auth_info directory if it doesn't exist
@@ -102,6 +129,15 @@ const AUTH_DIR = 'auth_info';
 if (!fs.existsSync(AUTH_DIR)) {
     fs.mkdirSync(AUTH_DIR);
 }
+
+// Error handling for the Express server
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
+});
 
 // Start the bot
 connectToWhatsApp();
